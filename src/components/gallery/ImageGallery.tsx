@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, Trash2, Download, Search, Grid, Loader2, FolderPlus, Folder, FolderOpen, MoreVertical, X, Pencil } from "lucide-react";
+import { Heart, Trash2, Download, Search, Grid, Loader2, FolderPlus, Folder, FolderOpen, MoreVertical, X, Pencil, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,11 @@ const FOLDER_COLORS = [
   "#f97316", "#eab308", "#22c55e", "#06b6d4"
 ];
 
-export function ImageGallery() {
+interface ImageGalleryProps {
+  onEditImage?: (imageUrl: string) => void;
+}
+
+export function ImageGallery({ onEditImage }: ImageGalleryProps) {
   const { images, isLoading, toggleFavorite, deleteImage, moveToFolder } = useGeneratedImages();
   const { folders, createFolder, deleteFolder, updateFolder } = useFolders();
   const [searchQuery, setSearchQuery] = useState("");
@@ -439,6 +443,18 @@ export function ImageGallery() {
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
+
+                      {onEditImage && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onEditImage(image.image_url)}
+                          className="gap-2"
+                        >
+                          <PenTool className="h-4 w-4" />
+                          Editar
+                        </Button>
+                      )}
 
                       <Button
                         variant="ghost"
