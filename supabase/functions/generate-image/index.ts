@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, style } = await req.json();
+    const { prompt, style, format, contentType, mood, includeText, brandColors } = await req.json();
     
     if (!prompt) {
       return new Response(
@@ -30,24 +30,86 @@ serve(async (req) => {
       );
     }
 
-    // Build enhanced prompt with style
-    let enhancedPrompt = prompt;
-    if (style) {
-      const stylePrompts: Record<string, string> = {
-        minimal: "minimalist, clean design, simple shapes, white space, modern aesthetic",
-        vibrant: "vibrant colors, bold, energetic, dynamic composition, eye-catching",
-        corporate: "professional, corporate style, clean, trustworthy, business-oriented",
-        photorealistic: "photorealistic, high detail, realistic lighting, professional photography",
-        artistic: "artistic, creative, abstract elements, unique style, expressive",
-        retro: "retro style, vintage aesthetic, nostalgic, classic design elements",
-      };
-      
-      if (stylePrompts[style]) {
-        enhancedPrompt = `${prompt}. Style: ${stylePrompts[style]}`;
-      }
+    // Format dimensions mapping
+    const formatDimensions: Record<string, { width: number; height: number; description: string }> = {
+      "post-square": { width: 1080, height: 1080, description: "square format for social media feed post" },
+      "post-portrait": { width: 1080, height: 1350, description: "portrait format 4:5 for Instagram feed" },
+      "stories": { width: 1080, height: 1920, description: "vertical 9:16 format for stories and reels" },
+      "thumbnail": { width: 1280, height: 720, description: "horizontal 16:9 format for YouTube thumbnail" },
+      "ad-landscape": { width: 1200, height: 628, description: "landscape format for Meta ads and banners" },
+      "ad-square": { width: 1080, height: 1080, description: "square format for Meta ads" },
+    };
+
+    // Style prompts
+    const stylePrompts: Record<string, string> = {
+      minimal: "minimalist design, clean lines, simple shapes, generous white space, modern aesthetic",
+      vibrant: "vibrant colors, bold contrast, energetic composition, dynamic elements, eye-catching",
+      corporate: "professional corporate style, clean and trustworthy, business-oriented, polished",
+      photorealistic: "photorealistic, high detail, realistic lighting, professional photography quality",
+      artistic: "artistic creative style, abstract elements, unique expression, visually distinctive",
+      retro: "retro vintage aesthetic, nostalgic feel, classic design elements, throwback style",
+    };
+
+    // Content type prompts
+    const contentTypePrompts: Record<string, string> = {
+      promotion: "promotional content, sale or discount theme, attention-grabbing offer presentation",
+      launch: "product launch theme, new and exciting, announcement style, debut presentation",
+      quote: "inspirational quote layout, text-focused design, motivational message presentation",
+      product: "product showcase, item-focused, commercial presentation, feature highlight",
+      event: "event announcement, date and time emphasis, invitation style, gathering theme",
+      educational: "educational content, informative layout, learning-focused, knowledge sharing",
+    };
+
+    // Mood prompts
+    const moodPrompts: Record<string, string> = {
+      professional: "professional and serious tone, corporate confidence, trustworthy feel",
+      casual: "casual and relaxed vibe, friendly approachable feel, laid-back atmosphere",
+      energetic: "high energy dynamic feel, exciting and active, powerful movement",
+      elegant: "elegant and sophisticated, refined luxury feel, premium quality aesthetic",
+      friendly: "warm and friendly, welcoming and approachable, positive and inviting",
+      bold: "bold and daring, strong impactful presence, confident and striking",
+    };
+
+    // Build the enhanced prompt
+    const promptParts: string[] = [];
+    
+    // Base prompt
+    promptParts.push(prompt);
+    
+    // Add format context
+    const formatInfo = formatDimensions[format] || formatDimensions["post-square"];
+    promptParts.push(`Create this as a ${formatInfo.description}`);
+    
+    // Add style
+    if (style && stylePrompts[style]) {
+      promptParts.push(`Visual style: ${stylePrompts[style]}`);
+    }
+    
+    // Add content type
+    if (contentType && contentTypePrompts[contentType]) {
+      promptParts.push(`Content type: ${contentTypePrompts[contentType]}`);
+    }
+    
+    // Add mood
+    if (mood && moodPrompts[mood]) {
+      promptParts.push(`Mood and tone: ${moodPrompts[mood]}`);
+    }
+    
+    // Add text overlay instructions
+    if (includeText && includeText.trim()) {
+      promptParts.push(`Include this text prominently in the image: "${includeText}". Make the text readable and well-integrated into the design`);
+    }
+    
+    // Add brand colors
+    if (brandColors && Array.isArray(brandColors) && brandColors.length > 0) {
+      const colorList = brandColors.slice(0, 5).join(", ");
+      promptParts.push(`Use these brand colors as the main color palette: ${colorList}. Incorporate these colors harmoniously throughout the design`);
     }
 
-    console.log("Generating image with prompt:", enhancedPrompt);
+    const enhancedPrompt = promptParts.join(". ");
+    
+    console.log("Generating image with enhanced prompt:", enhancedPrompt);
+    console.log("Format:", format, "Style:", style, "Content Type:", contentType, "Mood:", mood);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -60,7 +122,7 @@ serve(async (req) => {
         messages: [
           {
             role: "user",
-            content: `Generate a beautiful, high-quality image: ${enhancedPrompt}. Ultra high resolution, professional quality.`,
+            content: `Generate a beautiful, high-quality marketing image. ${enhancedPrompt}. Ultra high resolution, professional quality, suitable for social media and advertising.`,
           },
         ],
         modalities: ["image", "text"],
@@ -92,7 +154,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log("AI response received");
+    console.log("AI response received successfully");
 
     const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     
@@ -108,7 +170,10 @@ serve(async (req) => {
       JSON.stringify({ 
         image_url: imageUrl,
         prompt: prompt,
-        style: style || null
+        style: style || null,
+        format: format || "post-square",
+        contentType: contentType || null,
+        mood: mood || null,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
