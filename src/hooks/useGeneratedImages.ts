@@ -9,6 +9,7 @@ export interface GeneratedImage {
   image_url: string;
   is_favorite: boolean;
   created_at: string;
+  folder_id: string | null;
 }
 
 export function useGeneratedImages() {
@@ -101,12 +102,35 @@ export function useGeneratedImages() {
     }
   }, []);
 
+  const moveToFolder = useCallback(async (imageId: string, folderId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from("generated_images")
+        .update({ folder_id: folderId })
+        .eq("id", imageId);
+
+      if (error) throw error;
+
+      setImages((prev) =>
+        prev.map((img) =>
+          img.id === imageId ? { ...img, folder_id: folderId } : img
+        )
+      );
+
+      toast.success(folderId ? "Imagem movida para pasta" : "Imagem removida da pasta");
+    } catch (error) {
+      console.error("Error moving image:", error);
+      toast.error("Erro ao mover imagem");
+    }
+  }, []);
+
   return {
     images,
     isLoading,
     saveImage,
     toggleFavorite,
     deleteImage,
+    moveToFolder,
     refetch: fetchImages,
   };
 }

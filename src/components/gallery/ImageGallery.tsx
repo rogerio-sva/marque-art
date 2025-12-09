@@ -1,22 +1,35 @@
 import { useState } from "react";
-import { Heart, Trash2, Download, Search, Filter, Grid, Loader2 } from "lucide-react";
+import { Heart, Trash2, Download, Search, Grid, Loader2, FolderPlus, Folder, FolderOpen, MoreVertical, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useGeneratedImages, type GeneratedImage } from "@/hooks/useGeneratedImages";
+import { useFolders } from "@/hooks/useFolders";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
+const FOLDER_COLORS = [
+  "#6366f1", "#8b5cf6", "#ec4899", "#ef4444", 
+  "#f97316", "#eab308", "#22c55e", "#06b6d4"
+];
+
 export function ImageGallery() {
-  const { images, isLoading, toggleFavorite, deleteImage } = useGeneratedImages();
+  const { images, isLoading, toggleFavorite, deleteImage, moveToFolder } = useGeneratedImages();
+  const { folders, createFolder, deleteFolder } = useFolders();
   const [searchQuery, setSearchQuery] = useState("");
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderColor, setNewFolderColor] = useState(FOLDER_COLORS[0]);
 
   const filteredImages = images.filter((img) => {
     const matchesSearch = img.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (img.style && img.style.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesFavorite = !showFavoritesOnly || img.is_favorite;
-    return matchesSearch && matchesFavorite;
+    const matchesFolder = selectedFolderId === null || img.folder_id === selectedFolderId;
+    return matchesSearch && matchesFavorite && matchesFolder;
   });
 
   const handleDownload = async (image: GeneratedImage) => {
@@ -46,12 +59,39 @@ export function ImageGallery() {
     }
   };
 
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) {
+      toast.error("Digite um nome para a pasta");
+      return;
+    }
+    await createFolder(newFolderName.trim(), newFolderColor);
+    setNewFolderName("");
+    setNewFolderColor(FOLDER_COLORS[0]);
+    setIsCreatingFolder(false);
+  };
+
+  const handleDeleteFolder = async (id: string) => {
+    if (confirm("Tem certeza que deseja excluir esta pasta? As imagens não serão excluídas.")) {
+      await deleteFolder(id);
+      if (selectedFolderId === id) {
+        setSelectedFolderId(null);
+      }
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
+  };
+
+  const getImagesInFolder = (folderId: string | null) => {
+    if (folderId === null) {
+      return images.length;
+    }
+    return images.filter(img => img.folder_id === folderId).length;
   };
 
   return (
@@ -91,6 +131,102 @@ export function ImageGallery() {
       </CardHeader>
 
       <CardContent>
+        {/* Folders Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-muted-foreground">Pastas</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCreatingFolder(true)}
+              className="h-8 gap-1"
+            >
+              <FolderPlus className="h-4 w-4" />
+              Nova pasta
+            </Button>
+          </div>
+
+          {isCreatingFolder && (
+            <div className="mb-4 p-3 border rounded-lg bg-muted/30 space-y-3">
+              <Input
+                placeholder="Nome da pasta"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
+                autoFocus
+              />
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Cor:</span>
+                <div className="flex gap-1">
+                  {FOLDER_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setNewFolderColor(color)}
+                      className={`w-5 h-5 rounded-full transition-transform ${newFolderColor === color ? "scale-125 ring-2 ring-offset-2 ring-foreground" : ""}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleCreateFolder}>Criar</Button>
+                <Button size="sm" variant="ghost" onClick={() => setIsCreatingFolder(false)}>Cancelar</Button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={selectedFolderId === null ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedFolderId(null)}
+              className="gap-2"
+            >
+              <Grid className="h-4 w-4" />
+              Todas ({images.length})
+            </Button>
+
+            {folders.map((folder) => (
+              <div key={folder.id} className="relative group">
+                <Button
+                  variant={selectedFolderId === folder.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedFolderId(folder.id)}
+                  className="gap-2 pr-8"
+                >
+                  {selectedFolderId === folder.id ? (
+                    <FolderOpen className="h-4 w-4" style={{ color: folder.color }} />
+                  ) : (
+                    <Folder className="h-4 w-4" style={{ color: folder.color }} />
+                  )}
+                  {folder.name} ({getImagesInFolder(folder.id)})
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <MoreVertical className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => handleDeleteFolder(folder.id)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Excluir pasta
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Images Grid */}
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -100,12 +236,12 @@ export function ImageGallery() {
             <Grid className="h-12 w-12 text-muted-foreground/50" />
             <div>
               <p className="font-medium text-muted-foreground">
-                {searchQuery || showFavoritesOnly
+                {searchQuery || showFavoritesOnly || selectedFolderId
                   ? "Nenhuma imagem encontrada"
                   : "Sua galeria está vazia"}
               </p>
               <p className="text-sm text-muted-foreground/70">
-                {searchQuery || showFavoritesOnly
+                {searchQuery || showFavoritesOnly || selectedFolderId
                   ? "Tente ajustar os filtros"
                   : "Gere sua primeira imagem para começar"}
               </p>
@@ -144,6 +280,16 @@ export function ImageGallery() {
                         <Heart className="h-5 w-5 fill-destructive text-destructive drop-shadow-md" />
                       </div>
                     )}
+
+                    {/* Folder indicator */}
+                    {image.folder_id && (
+                      <div className="absolute left-2 top-2">
+                        <Folder 
+                          className="h-5 w-5 drop-shadow-md" 
+                          style={{ color: folders.find(f => f.id === image.folder_id)?.color || "#6366f1" }} 
+                        />
+                      </div>
+                    )}
                   </div>
                 </DialogTrigger>
 
@@ -166,7 +312,7 @@ export function ImageGallery() {
                       Criado em {formatDate(image.created_at)}
                     </p>
                     
-                    <div className="mt-4 flex gap-2">
+                    <div className="mt-4 flex flex-wrap gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -185,6 +331,45 @@ export function ImageGallery() {
                         <Download className="h-4 w-4" />
                         Download
                       </Button>
+                      
+                      {/* Move to folder dropdown */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-2">
+                            <Folder className="h-4 w-4" />
+                            {image.folder_id 
+                              ? folders.find(f => f.id === image.folder_id)?.name || "Pasta"
+                              : "Mover para pasta"}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          {image.folder_id && (
+                            <>
+                              <DropdownMenuItem onClick={() => moveToFolder(image.id, null)}>
+                                <X className="h-4 w-4 mr-2" />
+                                Remover da pasta
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
+                          {folders.map((folder) => (
+                            <DropdownMenuItem
+                              key={folder.id}
+                              onClick={() => moveToFolder(image.id, folder.id)}
+                              disabled={image.folder_id === folder.id}
+                            >
+                              <Folder className="h-4 w-4 mr-2" style={{ color: folder.color }} />
+                              {folder.name}
+                            </DropdownMenuItem>
+                          ))}
+                          {folders.length === 0 && (
+                            <DropdownMenuItem disabled>
+                              Nenhuma pasta criada
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
                       <Button
                         variant="ghost"
                         size="sm"
