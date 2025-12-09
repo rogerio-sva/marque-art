@@ -3,6 +3,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { AppNav } from "@/components/layout/AppNav";
 import { BrandConfigPanel } from "@/components/brand/BrandConfigPanel";
 import { ImageGenerator } from "@/components/generator/ImageGenerator";
+import { CreativesBatchGenerator } from "@/components/generator/CreativesBatchGenerator";
 import { ImageGallery } from "@/components/gallery/ImageGallery";
 import { VisualEditor } from "@/components/editor/VisualEditor";
 
@@ -48,6 +49,10 @@ const Index = () => {
               </div>
               <ImageGenerator />
             </div>
+          )}
+
+          {activeTab === "creatives" && (
+            <CreativesBatchGenerator />
           )}
 
           {activeTab === "editor" && (
