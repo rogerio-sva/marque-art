@@ -97,9 +97,9 @@ serve(async (req) => {
       promptParts.push(`Mood and tone: ${moodPrompts[mood]}`);
     }
     
-    // Add text overlay instructions
+    // Add text overlay instructions with safe margin
     if (includeText && includeText.trim()) {
-      promptParts.push(`Include this text prominently in the image: "${includeText}". Make the text readable and well-integrated into the design`);
+      promptParts.push(`Include this text prominently in the image: "${includeText}". IMPORTANT: Keep all text well within safe margins, at least 10% away from all edges. Make the text readable, centered or well-positioned, and never cropped or cut off at the borders. Use appropriate padding around text elements.`);
     }
     
     // Add brand colors
