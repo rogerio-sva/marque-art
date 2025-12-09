@@ -1,4 +1,4 @@
-import { Palette, Sparkles, Grid, Settings } from "lucide-react";
+import { Palette, Sparkles, PenTool, Grid } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AppNavProps {
@@ -9,6 +9,7 @@ interface AppNavProps {
 const navItems = [
   { id: "brand", label: "Marca", icon: Palette },
   { id: "generator", label: "Gerar", icon: Sparkles },
+  { id: "editor", label: "Editor", icon: PenTool },
   { id: "gallery", label: "Galeria", icon: Grid },
 ];
 
