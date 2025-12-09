@@ -57,9 +57,12 @@ export function ImageGenerator() {
   const [textContent, setTextContent] = useState("");
   const [useBrandColors, setUseBrandColors] = useState(false);
   const [specialistPhotos, setSpecialistPhotos] = useState<string[]>([]);
+  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [referenceModifications, setReferenceModifications] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const referenceInputRef = useRef<HTMLInputElement>(null);
   const { saveImage } = useGeneratedImages();
   const { config: brandConfig } = useBrandConfig();
 
@@ -91,6 +94,27 @@ export function ImageGenerator() {
     setSpecialistPhotos((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleReferenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Imagem muito grande. Máximo 5MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setReferenceImage(base64);
+    };
+    reader.readAsDataURL(file);
+
+    if (referenceInputRef.current) {
+      referenceInputRef.current.value = "";
+    }
+  };
+
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast.error("Digite uma descrição para a imagem");
@@ -111,6 +135,8 @@ export function ImageGenerator() {
           includeText: includeText ? textContent : null,
           brandColors: useBrandColors ? brandConfig.colors : null,
           specialistPhotos: specialistPhotos.length > 0 ? specialistPhotos : null,
+          referenceImage: referenceImage,
+          referenceModifications: referenceModifications.trim() || null,
         },
       });
 
@@ -356,6 +382,63 @@ export function ImageGenerator() {
             )}
             <p className="text-xs text-muted-foreground">
               As fotos serão incorporadas na imagem gerada
+            </p>
+          </div>
+
+          {/* Reference Image Upload */}
+          <div className="space-y-3 rounded-lg border border-border p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                <Label className="cursor-pointer">Imagem de Referência</Label>
+              </div>
+              {!referenceImage && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => referenceInputRef.current?.click()}
+                  className="gap-1"
+                >
+                  <Upload className="h-3 w-3" />
+                  Carregar
+                </Button>
+              )}
+              <input
+                ref={referenceInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleReferenceUpload}
+                className="hidden"
+              />
+            </div>
+            {referenceImage && (
+              <div className="space-y-2">
+                <div className="relative group inline-block">
+                  <img
+                    src={referenceImage}
+                    alt="Referência"
+                    className="h-24 w-auto rounded-lg object-cover border border-border"
+                  />
+                  <button
+                    onClick={() => {
+                      setReferenceImage(null);
+                      setReferenceModifications("");
+                    }}
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+                <Input
+                  placeholder="Modificações desejadas (ex: mude as cores para azul)"
+                  value={referenceModifications}
+                  onChange={(e) => setReferenceModifications(e.target.value)}
+                />
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              A IA criará algo parecido com a imagem enviada
             </p>
           </div>
 

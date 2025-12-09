@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, Trash2, Download, Search, Grid, Loader2, FolderPlus, Folder, FolderOpen, MoreVertical, X } from "lucide-react";
+import { Heart, Trash2, Download, Search, Grid, Loader2, FolderPlus, Folder, FolderOpen, MoreVertical, X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,13 +16,16 @@ const FOLDER_COLORS = [
 
 export function ImageGallery() {
   const { images, isLoading, toggleFavorite, deleteImage, moveToFolder } = useGeneratedImages();
-  const { folders, createFolder, deleteFolder } = useFolders();
+  const { folders, createFolder, deleteFolder, updateFolder } = useFolders();
   const [searchQuery, setSearchQuery] = useState("");
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderColor, setNewFolderColor] = useState(FOLDER_COLORS[0]);
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editingFolderName, setEditingFolderName] = useState("");
+  const [editingFolderColor, setEditingFolderColor] = useState("");
 
   const filteredImages = images.filter((img) => {
     const matchesSearch = img.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -76,6 +79,30 @@ export function ImageGallery() {
       if (selectedFolderId === id) {
         setSelectedFolderId(null);
       }
+    }
+  };
+
+  const startEditingFolder = (folder: { id: string; name: string; color: string | null }) => {
+    setEditingFolderId(folder.id);
+    setEditingFolderName(folder.name);
+    setEditingFolderColor(folder.color || FOLDER_COLORS[0]);
+  };
+
+  const handleUpdateFolder = async () => {
+    if (!editingFolderId || !editingFolderName.trim()) {
+      toast.error("Digite um nome para a pasta");
+      return;
+    }
+    await updateFolder(editingFolderId, { name: editingFolderName.trim(), color: editingFolderColor });
+    setEditingFolderId(null);
+    setEditingFolderName("");
+    setEditingFolderColor("");
+  };
+
+  const handleQuickDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirm("Tem certeza que deseja excluir esta imagem?")) {
+      await deleteImage(id);
     }
   };
 
@@ -175,6 +202,36 @@ export function ImageGallery() {
             </div>
           )}
 
+          {/* Editing Folder */}
+          {editingFolderId && (
+            <div className="mb-4 p-3 border rounded-lg bg-muted/30 space-y-3">
+              <Input
+                placeholder="Nome da pasta"
+                value={editingFolderName}
+                onChange={(e) => setEditingFolderName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleUpdateFolder()}
+                autoFocus
+              />
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Cor:</span>
+                <div className="flex gap-1">
+                  {FOLDER_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setEditingFolderColor(color)}
+                      className={`w-5 h-5 rounded-full transition-transform ${editingFolderColor === color ? "scale-125 ring-2 ring-offset-2 ring-foreground" : ""}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleUpdateFolder}>Salvar</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingFolderId(null)}>Cancelar</Button>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2">
             <Button
               variant={selectedFolderId === null ? "default" : "outline"}
@@ -195,9 +252,9 @@ export function ImageGallery() {
                   className="gap-2 pr-8"
                 >
                   {selectedFolderId === folder.id ? (
-                    <FolderOpen className="h-4 w-4" style={{ color: folder.color }} />
+                    <FolderOpen className="h-4 w-4" style={{ color: folder.color || "#6366f1" }} />
                   ) : (
-                    <Folder className="h-4 w-4" style={{ color: folder.color }} />
+                    <Folder className="h-4 w-4" style={{ color: folder.color || "#6366f1" }} />
                   )}
                   {folder.name} ({getImagesInFolder(folder.id)})
                 </Button>
@@ -212,6 +269,11 @@ export function ImageGallery() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => startEditingFolder(folder)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Renomear / Cor
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => handleDeleteFolder(folder.id)}
                       className="text-destructive"
@@ -290,6 +352,14 @@ export function ImageGallery() {
                         />
                       </div>
                     )}
+
+                    {/* Quick delete button */}
+                    <button
+                      onClick={(e) => handleQuickDelete(e, image.id)}
+                      className="absolute right-2 bottom-2 h-8 w-8 rounded-full bg-destructive/90 text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </DialogTrigger>
 
