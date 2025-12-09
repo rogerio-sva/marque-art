@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, style, format, contentType, mood, includeText, brandColors, specialistPhotos } = await req.json();
+    const { prompt, style, format, contentType, mood, includeText, brandColors, specialistPhotos, referenceImage, referenceModifications } = await req.json();
     
     if (!prompt) {
       return new Response(
@@ -31,6 +31,7 @@ serve(async (req) => {
     }
 
     const hasSpecialistPhotos = specialistPhotos && Array.isArray(specialistPhotos) && specialistPhotos.length > 0;
+    const hasReferenceImage = referenceImage && typeof referenceImage === "string" && referenceImage.length > 0;
 
     // Format dimensions mapping
     const formatDimensions: Record<string, { width: number; height: number; description: string }> = {
@@ -114,28 +115,66 @@ serve(async (req) => {
       promptParts.push(`IMPORTANT: Incorporate the ${photoCount} provided photo(s) of specialists/experts into the design. Feature their faces prominently and professionally in the composition. Make them look like professional instructors or experts.`);
     }
 
+    // Add reference image instructions
+    if (hasReferenceImage) {
+      if (referenceModifications && referenceModifications.trim()) {
+        promptParts.push(`IMPORTANT: Use the provided reference image as inspiration and create something similar, but apply these modifications: ${referenceModifications}. Maintain the overall style and composition of the reference while incorporating the requested changes.`);
+      } else {
+        promptParts.push(`IMPORTANT: Use the provided reference image as inspiration and create something very similar in style, composition, and aesthetic. Recreate the essence of the reference image.`);
+      }
+    }
+
     const enhancedPrompt = promptParts.join(". ");
     
     console.log("Generating image with enhanced prompt:", enhancedPrompt);
-    console.log("Format:", format, "Style:", style, "Content Type:", contentType, "Mood:", mood, "Has specialist photos:", hasSpecialistPhotos);
+    console.log("Format:", format, "Style:", style, "Content Type:", contentType, "Mood:", mood, "Has specialist photos:", hasSpecialistPhotos, "Has reference image:", hasReferenceImage);
 
     // Build the message content - either simple text or multimodal with images
     let messageContent: any;
+    const hasImages = hasSpecialistPhotos || hasReferenceImage;
     
-    if (hasSpecialistPhotos) {
+    if (hasImages) {
       // Multimodal request with reference images
+      const imageInputs: any[] = [];
+      
+      // Add reference image first if present
+      if (hasReferenceImage) {
+        imageInputs.push({
+          type: "image_url",
+          image_url: {
+            url: referenceImage,
+          },
+        });
+      }
+      
+      // Add specialist photos
+      if (hasSpecialistPhotos) {
+        specialistPhotos.forEach((photo: string) => {
+          imageInputs.push({
+            type: "image_url",
+            image_url: {
+              url: photo,
+            },
+          });
+        });
+      }
+
+      let textInstruction = `Generate a beautiful, high-quality marketing image. ${enhancedPrompt}. Ultra high resolution, professional quality, suitable for social media and advertising.`;
+      
+      if (hasReferenceImage && hasSpecialistPhotos) {
+        textInstruction += " The first image is the reference for style/composition. The following images are specialists/experts to incorporate.";
+      } else if (hasReferenceImage) {
+        textInstruction += " Use the provided image as a reference for the style and composition.";
+      } else if (hasSpecialistPhotos) {
+        textInstruction += " Incorporate the provided photos of specialists/experts into the design prominently.";
+      }
+
       messageContent = [
         {
           type: "text",
-          text: `Generate a beautiful, high-quality marketing image. ${enhancedPrompt}. Ultra high resolution, professional quality, suitable for social media and advertising. Incorporate the provided photos of specialists/experts into the design prominently.`,
+          text: textInstruction,
         },
-        // Add each specialist photo as an image_url
-        ...specialistPhotos.map((photo: string) => ({
-          type: "image_url",
-          image_url: {
-            url: photo,
-          },
-        })),
+        ...imageInputs,
       ];
     } else {
       // Simple text-only request
