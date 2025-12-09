@@ -140,10 +140,13 @@ Meta Ads best practices: Clear focal point, bold typography, high contrast color
 
         if (error) throw error;
 
+        // Edge function returns image_url, not imageUrl
+        const imageUrl = data.image_url || data.imageUrl;
+
         setCreatives((prev) =>
           prev.map((c) =>
             c.id === creative.id
-              ? { ...c, status: "done", imageUrl: data.imageUrl }
+              ? { ...c, status: "done", imageUrl: imageUrl }
               : c
           )
         );
