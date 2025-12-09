@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, style, format, contentType, mood, includeText, brandColors } = await req.json();
+    const { prompt, style, format, contentType, mood, includeText, brandColors, specialistPhotos } = await req.json();
     
     if (!prompt) {
       return new Response(
@@ -29,6 +29,8 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const hasSpecialistPhotos = specialistPhotos && Array.isArray(specialistPhotos) && specialistPhotos.length > 0;
 
     // Format dimensions mapping
     const formatDimensions: Record<string, { width: number; height: number; description: string }> = {
@@ -106,10 +108,39 @@ serve(async (req) => {
       promptParts.push(`Use these brand colors as the main color palette: ${colorList}. Incorporate these colors harmoniously throughout the design`);
     }
 
+    // Add specialist photos instructions
+    if (hasSpecialistPhotos) {
+      const photoCount = specialistPhotos.length;
+      promptParts.push(`IMPORTANT: Incorporate the ${photoCount} provided photo(s) of specialists/experts into the design. Feature their faces prominently and professionally in the composition. Make them look like professional instructors or experts.`);
+    }
+
     const enhancedPrompt = promptParts.join(". ");
     
     console.log("Generating image with enhanced prompt:", enhancedPrompt);
-    console.log("Format:", format, "Style:", style, "Content Type:", contentType, "Mood:", mood);
+    console.log("Format:", format, "Style:", style, "Content Type:", contentType, "Mood:", mood, "Has specialist photos:", hasSpecialistPhotos);
+
+    // Build the message content - either simple text or multimodal with images
+    let messageContent: any;
+    
+    if (hasSpecialistPhotos) {
+      // Multimodal request with reference images
+      messageContent = [
+        {
+          type: "text",
+          text: `Generate a beautiful, high-quality marketing image. ${enhancedPrompt}. Ultra high resolution, professional quality, suitable for social media and advertising. Incorporate the provided photos of specialists/experts into the design prominently.`,
+        },
+        // Add each specialist photo as an image_url
+        ...specialistPhotos.map((photo: string) => ({
+          type: "image_url",
+          image_url: {
+            url: photo,
+          },
+        })),
+      ];
+    } else {
+      // Simple text-only request
+      messageContent = `Generate a beautiful, high-quality marketing image. ${enhancedPrompt}. Ultra high resolution, professional quality, suitable for social media and advertising.`;
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -122,7 +153,7 @@ serve(async (req) => {
         messages: [
           {
             role: "user",
-            content: `Generate a beautiful, high-quality marketing image. ${enhancedPrompt}. Ultra high resolution, professional quality, suitable for social media and advertising.`,
+            content: messageContent,
           },
         ],
         modalities: ["image", "text"],
