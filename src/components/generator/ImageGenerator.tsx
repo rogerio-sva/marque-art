@@ -335,12 +335,52 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
               />
             </div>
             {includeText && (
-              <Input
-                placeholder="Ex: PROMOÇÃO ESPECIAL ou Inscreva-se agora!"
-                value={textContent}
-                onChange={(e) => setTextContent(e.target.value)}
-                className="mt-2"
-              />
+              <div className="space-y-3 mt-2">
+                <Input
+                  placeholder="Ex: PROMOÇÃO ESPECIAL ou Inscreva-se agora!"
+                  value={textContent}
+                  onChange={(e) => setTextContent(e.target.value)}
+                />
+                
+                {/* Text Preview */}
+                {textContent && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Preview do texto</Label>
+                    <div 
+                      className="relative bg-gradient-to-br from-muted/50 to-muted rounded-lg overflow-hidden flex items-center justify-center"
+                      style={{
+                        aspectRatio: selectedFormatData?.ratio.replace(':', '/') || '1/1',
+                        maxHeight: '180px',
+                      }}
+                    >
+                      {/* Safe margin indicator */}
+                      <div className="absolute inset-[15%] border-2 border-dashed border-primary/30 rounded pointer-events-none" />
+                      
+                      {/* Text preview */}
+                      <div className="absolute inset-[15%] flex items-center justify-center p-2">
+                        <p 
+                          className="text-center font-bold text-foreground break-words"
+                          style={{
+                            fontSize: textContent.length > 30 ? '0.75rem' : textContent.length > 15 ? '0.875rem' : '1rem',
+                            lineHeight: 1.2,
+                            textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                          }}
+                        >
+                          {textContent}
+                        </p>
+                      </div>
+                      
+                      {/* Format label */}
+                      <span className="absolute bottom-1 right-2 text-[10px] text-muted-foreground/70">
+                        {selectedFormatData?.dimensions}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground text-center">
+                      Área tracejada = margem segura (15%). O texto ficará dentro dessa área.
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
