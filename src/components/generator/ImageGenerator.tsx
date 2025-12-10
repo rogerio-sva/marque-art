@@ -60,6 +60,18 @@ const textPositions = [
   { id: "bottom", name: "Rodapé", emoji: "⬇️" },
 ];
 
+const textSizes = [
+  { id: "small", name: "Pequeno", size: "0.65rem" },
+  { id: "medium", name: "Médio", size: "0.875rem" },
+  { id: "large", name: "Grande", size: "1.125rem" },
+];
+
+const textColors = [
+  { id: "light", name: "Claro", color: "#FFFFFF", bg: "bg-white border border-border" },
+  { id: "dark", name: "Escuro", color: "#1a1a1a", bg: "bg-gray-900" },
+  { id: "primary", name: "Marca", color: "var(--primary)", bg: "bg-primary" },
+];
+
 export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerated }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [selectedFormat, setSelectedFormat] = useState("post-square");
@@ -69,6 +81,8 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
   const [includeText, setIncludeText] = useState(false);
   const [textContent, setTextContent] = useState("");
   const [textPosition, setTextPosition] = useState("center");
+  const [textSize, setTextSize] = useState("medium");
+  const [textColor, setTextColor] = useState("light");
   const [useBrandColors, setUseBrandColors] = useState(false);
   const [specialistPhotos, setSpecialistPhotos] = useState<string[]>([]);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
@@ -371,6 +385,47 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
                   </div>
                 </div>
                 
+                {/* Text Size Selection */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Tamanho do texto</Label>
+                  <div className="flex gap-2">
+                    {textSizes.map((size) => (
+                      <button
+                        key={size.id}
+                        onClick={() => setTextSize(size.id)}
+                        className={`flex-1 flex items-center justify-center rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                          textSize === size.id
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-card hover:border-primary/50 hover:bg-muted/50"
+                        }`}
+                      >
+                        <span style={{ fontSize: size.size }}>{size.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Text Color Selection */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Cor do texto</Label>
+                  <div className="flex gap-2">
+                    {textColors.map((colorOption) => (
+                      <button
+                        key={colorOption.id}
+                        onClick={() => setTextColor(colorOption.id)}
+                        className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                          textColor === colorOption.id
+                            ? "border-primary bg-primary/10"
+                            : "border-border bg-card hover:border-primary/50 hover:bg-muted/50"
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded-full ${colorOption.bg}`} />
+                        <span>{colorOption.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
                 {/* Text Preview */}
                 {textContent && (
                   <div className="space-y-2">
@@ -396,11 +451,12 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
                         }`}
                       >
                         <p 
-                          className="text-center font-bold text-foreground break-words"
+                          className="text-center font-bold break-words"
                           style={{
-                            fontSize: textContent.length > 30 ? '0.75rem' : textContent.length > 15 ? '0.875rem' : '1rem',
+                            fontSize: textSizes.find(s => s.id === textSize)?.size || '0.875rem',
                             lineHeight: 1.2,
-                            textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                            color: textColors.find(c => c.id === textColor)?.color || '#FFFFFF',
+                            textShadow: textColor === 'light' ? '0 1px 3px rgba(0,0,0,0.5)' : '0 1px 3px rgba(255,255,255,0.3)',
                           }}
                         >
                           {textContent}
