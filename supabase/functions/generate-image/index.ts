@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, style, format, contentType, mood, includeText, textPosition, brandColors, specialistPhotos, referenceImage, referenceModifications } = await req.json();
+    const { prompt, style, format, customWidth, customHeight, contentType, mood, includeText, textPosition, brandColors, specialistPhotos, referenceImage, referenceModifications } = await req.json();
     
     if (!prompt) {
       return new Response(
@@ -42,6 +42,17 @@ serve(async (req) => {
       "ad-landscape": { width: 1200, height: 628, description: "landscape format for Meta ads and banners" },
       "ad-square": { width: 1080, height: 1080, description: "square format for Meta ads" },
     };
+
+    // Handle custom format
+    if (format === "custom" && customWidth && customHeight) {
+      const w = Math.min(4096, Math.max(256, customWidth));
+      const h = Math.min(4096, Math.max(256, customHeight));
+      formatDimensions["custom"] = { 
+        width: w, 
+        height: h, 
+        description: `custom ${w}x${h} format` 
+      };
+    }
 
     // Style prompts
     const stylePrompts: Record<string, string> = {

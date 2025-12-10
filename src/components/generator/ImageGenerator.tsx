@@ -25,6 +25,13 @@ const formats = [
   { id: "thumbnail", name: "Thumbnail", dimensions: "1280×720", ratio: "16:9", emoji: "🎬" },
   { id: "ad-landscape", name: "Anúncio", dimensions: "1200×628", ratio: "1.91:1", emoji: "📢" },
   { id: "ad-square", name: "Anúncio Quadrado", dimensions: "1080×1080", ratio: "1:1", emoji: "🎯" },
+  { id: "custom", name: "Personalizado", dimensions: "Custom", ratio: "?", emoji: "✏️" },
+];
+
+const customPresets = [
+  { name: "WhatsApp", width: 640, height: 640 },
+  { name: "Banner", width: 1920, height: 600 },
+  { name: "Capa FB", width: 820, height: 312 },
 ];
 
 const styles = [
@@ -75,6 +82,8 @@ const textColors = [
 export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerated }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [selectedFormat, setSelectedFormat] = useState("post-square");
+  const [customWidth, setCustomWidth] = useState(1080);
+  const [customHeight, setCustomHeight] = useState(1080);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [selectedContentType, setSelectedContentType] = useState<string | null>(null);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
@@ -159,6 +168,8 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
           prompt: prompt.trim(), 
           style: selectedStyle,
           format: selectedFormat,
+          customWidth: selectedFormat === "custom" ? customWidth : null,
+          customHeight: selectedFormat === "custom" ? customHeight : null,
           contentType: selectedContentType,
           mood: selectedMood,
           includeText: includeText ? textContent : null,
@@ -268,10 +279,57 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
                 >
                   <span className="text-base">{format.emoji}</span>
                   <span className="font-medium">{format.name}</span>
-                  <span className="text-muted-foreground">{format.dimensions}</span>
+                  <span className="text-muted-foreground">
+                    {format.id === "custom" ? `${customWidth}×${customHeight}` : format.dimensions}
+                  </span>
                 </button>
               ))}
             </div>
+            
+            {/* Custom Dimensions */}
+            {selectedFormat === "custom" && (
+              <div className="space-y-3 rounded-lg border border-border p-3 bg-muted/30">
+                <div className="flex gap-3">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs text-muted-foreground">Largura (px)</Label>
+                    <Input
+                      type="number"
+                      min={256}
+                      max={4096}
+                      value={customWidth}
+                      onChange={(e) => setCustomWidth(Math.min(4096, Math.max(256, parseInt(e.target.value) || 256)))}
+                      className="text-center"
+                    />
+                  </div>
+                  <div className="flex items-end pb-2 text-muted-foreground">×</div>
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs text-muted-foreground">Altura (px)</Label>
+                    <Input
+                      type="number"
+                      min={256}
+                      max={4096}
+                      value={customHeight}
+                      onChange={(e) => setCustomHeight(Math.min(4096, Math.max(256, parseInt(e.target.value) || 256)))}
+                      className="text-center"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {customPresets.map((preset) => (
+                    <button
+                      key={preset.name}
+                      onClick={() => {
+                        setCustomWidth(preset.width);
+                        setCustomHeight(preset.height);
+                      }}
+                      className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted transition-colors"
+                    >
+                      {preset.name} ({preset.width}×{preset.height})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Style Selection */}
