@@ -189,6 +189,7 @@ export function VisualEditor({ initialImage, isModal }: VisualEditorProps) {
 
       <CardContent className="flex-1 flex p-0 overflow-hidden">
         <EditorCanvas
+          key={backgroundImage || 'empty'} 
           format={format}
           activeTool={activeTool}
           onCanvasReady={handleCanvasReady}
