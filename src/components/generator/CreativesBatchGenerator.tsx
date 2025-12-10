@@ -19,7 +19,11 @@ import {
 import { CreativePreviewGrid, CreativeResult } from "./CreativePreviewGrid";
 import { cn } from "@/lib/utils";
 
-export function CreativesBatchGenerator() {
+interface CreativesBatchGeneratorProps {
+  onEditImage?: (imageUrl: string) => void;
+}
+
+export function CreativesBatchGenerator({ onEditImage }: CreativesBatchGeneratorProps) {
   const { saveImage } = useGeneratedImages();
   const { config: brandConfig } = useBrandConfig();
 
@@ -482,6 +486,7 @@ Meta Ads best practices: Clear focal point, bold typography, high contrast color
         onDownloadAll={handleDownloadAll}
         onSaveAll={handleSaveAll}
         isGenerating={isGenerating}
+        onEditImage={onEditImage}
       />
     </div>
   );

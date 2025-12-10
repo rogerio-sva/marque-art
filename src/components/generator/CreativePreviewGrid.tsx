@@ -1,4 +1,4 @@
-import { Check, Download, Loader2, X, Archive } from "lucide-react";
+import { Check, Download, Loader2, X, Archive, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import JSZip from "jszip";
@@ -21,6 +21,7 @@ interface CreativePreviewGridProps {
   onDownloadAll: () => void;
   onSaveAll: () => void;
   isGenerating: boolean;
+  onEditImage?: (imageUrl: string) => void;
 }
 
 async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
@@ -33,6 +34,7 @@ export function CreativePreviewGrid({
   onDownloadAll,
   onSaveAll,
   isGenerating,
+  onEditImage,
 }: CreativePreviewGridProps) {
   const [isZipping, setIsZipping] = useState(false);
   const completedCount = creatives.filter((c) => c.status === "done").length;
@@ -138,6 +140,15 @@ export function CreativePreviewGrid({
                 <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
                   <Check className="w-4 h-4 text-white" />
                 </div>
+                {onEditImage && (
+                  <button
+                    onClick={() => onEditImage(creative.imageUrl!)}
+                    className="absolute top-2 left-2 w-7 h-7 rounded-full bg-background/90 flex items-center justify-center hover:bg-background transition-colors shadow-sm"
+                    title="Editar no Editor Visual"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-foreground" />
+                  </button>
+                )}
               </>
             )}
 
