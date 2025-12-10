@@ -101,17 +101,27 @@ serve(async (req) => {
     // Add text overlay instructions with safe margin and position - ALWAYS in Portuguese
     if (includeText && includeText.trim()) {
       const positionInstructions: Record<string, string> = {
-        top: "Position the text at the TOP of the image, horizontally centered, within the top 30% of the safe area",
-        center: "Position the text at the CENTER of the image, both horizontally and vertically centered",
-        bottom: "Position the text at the BOTTOM of the image, horizontally centered, within the bottom 30% of the safe area",
+        top: "Posicione o texto no TOPO da imagem, centralizado horizontalmente, dentro dos 30% superiores da área segura",
+        center: "Posicione o texto no CENTRO da imagem, centralizado tanto horizontal quanto verticalmente",
+        bottom: "Posicione o texto no RODAPÉ da imagem, centralizado horizontalmente, dentro dos 30% inferiores da área segura",
       };
       const positionText = positionInstructions[textPosition || "center"] || positionInstructions.center;
       
-      promptParts.push(`Include this text prominently in the image: "${includeText}". CRITICAL TEXT INSTRUCTIONS: 1) ${positionText}. 2) All text MUST be written in correct Brazilian Portuguese with proper grammar, spelling, and accents (á, é, í, ó, ú, ã, õ, ç). 3) Keep all text well within safe margins, at least 15% away from all edges. 4) Make the text large, readable, and never cropped or cut off at the borders. 5) Use contrasting colors so text is clearly visible. 6) Double-check Portuguese spelling before rendering.`);
+      promptParts.push(`TEXTO OBRIGATÓRIO NA IMAGEM: "${includeText}". 
+INSTRUÇÕES CRÍTICAS DE TEXTO:
+1) ${positionText}.
+2) O texto DEVE ser escrito em Português Brasileiro CORRETO e PERFEITO.
+3) VERIFICAR ortografia, gramática e acentuação (á, é, í, ó, ú, â, ê, ô, ã, õ, ç) ANTES de renderizar.
+4) NÃO inventar palavras. NÃO cometer erros de escrita.
+5) Manter texto dentro das margens seguras (15% de distância de todas as bordas).
+6) Texto grande, legível, com alto contraste, nunca cortado.
+7) COPIAR o texto EXATAMENTE como fornecido, sem alterações.`);
     }
     
-    // Global language instruction
-    promptParts.push("IMPORTANT: If any text is included in the image, it MUST be written in correct Brazilian Portuguese with proper grammar, spelling, and accents (á, é, í, ó, ú, ã, õ, ç, etc). No spelling errors allowed.");
+    // Global language instruction - more explicit
+    promptParts.push(`INSTRUÇÃO DE IDIOMA CRÍTICA: Todo e qualquer texto na imagem DEVE estar em Português Brasileiro PERFEITO. 
+Verificar: ortografia correta, gramática correta, acentuação correta (á, é, í, ó, ú, â, ê, ô, ã, õ, ç).
+NUNCA inventar palavras ou escrever texto com erros. Se não souber a grafia correta, NÃO inclua texto.`);
     
     // Add brand colors
     if (brandColors && Array.isArray(brandColors) && brandColors.length > 0) {
@@ -198,7 +208,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
+        model: "google/gemini-3-pro-image-preview",
         messages: [
           {
             role: "user",
