@@ -47,12 +47,12 @@ const Index = () => {
                   Use IA para criar backgrounds, elementos visuais e muito mais
                 </p>
               </div>
-              <ImageGenerator />
+              <ImageGenerator onEditImage={handleEditImage} />
             </div>
           )}
 
           {activeTab === "creatives" && (
-            <CreativesBatchGenerator />
+            <CreativesBatchGenerator onEditImage={handleEditImage} />
           )}
 
           {activeTab === "editor" && (

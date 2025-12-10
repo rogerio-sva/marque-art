@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Sparkles, Loader2, Download, Save, RefreshCw, Type, Palette, UserCircle, X, Upload } from "lucide-react";
+import { Sparkles, Loader2, Download, Save, RefreshCw, Type, Palette, UserCircle, X, Upload, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,10 @@ import { useGeneratedImages } from "@/hooks/useGeneratedImages";
 import { useBrandConfig } from "@/hooks/useBrandConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+interface ImageGeneratorProps {
+  onEditImage?: (imageUrl: string) => void;
+}
 
 const formats = [
   { id: "post-square", name: "Post Feed", dimensions: "1080×1080", ratio: "1:1", emoji: "📱" },
@@ -47,7 +51,7 @@ const moods = [
   { id: "bold", name: "Ousado", emoji: "💪" },
 ];
 
-export function ImageGenerator() {
+export function ImageGenerator({ onEditImage }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [selectedFormat, setSelectedFormat] = useState("post-square");
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
@@ -532,31 +536,43 @@ export function ImageGenerator() {
           </div>
 
           {generatedImage && (
-            <div className="mt-4 flex gap-2">
-              <Button
-                onClick={handleSaveToGallery}
-                variant="outline"
-                className="flex-1 gap-2"
-              >
-                <Save className="h-4 w-4" />
-                Salvar na Galeria
-              </Button>
-              <Button
-                onClick={handleDownload}
-                variant="outline"
-                className="flex-1 gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Download
-              </Button>
-              <Button
-                onClick={handleGenerate}
-                variant="ghost"
-                size="icon"
-                title="Gerar novamente"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
+            <div className="mt-4 space-y-2">
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSaveToGallery}
+                  variant="outline"
+                  className="flex-1 gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  Salvar
+                </Button>
+                <Button
+                  onClick={handleDownload}
+                  variant="outline"
+                  className="flex-1 gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download
+                </Button>
+                <Button
+                  onClick={handleGenerate}
+                  variant="ghost"
+                  size="icon"
+                  title="Gerar novamente"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+              {onEditImage && (
+                <Button
+                  onClick={() => onEditImage(generatedImage)}
+                  variant="default"
+                  className="w-full gap-2"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Editar no Editor Visual
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
