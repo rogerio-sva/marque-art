@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import JSZip from "jszip";
 import { useState } from "react";
 import { toast } from "sonner";
+import { EditorModal } from "@/components/editor/EditorModal";
 
 export interface CreativeResult {
   id: string;
@@ -37,6 +38,13 @@ export function CreativePreviewGrid({
   onEditImage,
 }: CreativePreviewGridProps) {
   const [isZipping, setIsZipping] = useState(false);
+  const [editorImage, setEditorImage] = useState<string | null>(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+
+  const handleEditClick = (imageUrl: string) => {
+    setEditorImage(imageUrl);
+    setIsEditorOpen(true);
+  };
   const completedCount = creatives.filter((c) => c.status === "done").length;
   const totalCount = creatives.length;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
@@ -140,15 +148,13 @@ export function CreativePreviewGrid({
                 <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
                   <Check className="w-4 h-4 text-white" />
                 </div>
-                {onEditImage && (
-                  <button
-                    onClick={() => onEditImage(creative.imageUrl!)}
-                    className="absolute top-2 left-2 w-7 h-7 rounded-full bg-background/90 flex items-center justify-center hover:bg-background transition-colors shadow-sm"
-                    title="Editar no Editor Visual"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-foreground" />
-                  </button>
-                )}
+                <button
+                  onClick={() => handleEditClick(creative.imageUrl!)}
+                  className="absolute top-2 left-2 w-7 h-7 rounded-full bg-background/90 flex items-center justify-center hover:bg-background transition-colors shadow-sm"
+                  title="Editar no Editor Visual"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-foreground" />
+                </button>
               </>
             )}
 
@@ -185,6 +191,12 @@ export function CreativePreviewGrid({
           </Button>
         </div>
       )}
+
+      <EditorModal
+        open={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        imageUrl={editorImage}
+      />
     </div>
   );
 }
