@@ -98,10 +98,13 @@ serve(async (req) => {
       promptParts.push(`Mood and tone: ${moodPrompts[mood]}`);
     }
     
-    // Add text overlay instructions with safe margin
+    // Add text overlay instructions with safe margin - ALWAYS in Portuguese
     if (includeText && includeText.trim()) {
-      promptParts.push(`Include this text prominently in the image: "${includeText}". IMPORTANT: Keep all text well within safe margins, at least 10% away from all edges. Make the text readable, centered or well-positioned, and never cropped or cut off at the borders. Use appropriate padding around text elements.`);
+      promptParts.push(`Include this text prominently in the image: "${includeText}". CRITICAL INSTRUCTIONS: 1) All text MUST be written in correct Brazilian Portuguese with proper grammar, spelling, and accents. 2) Keep all text well within safe margins, at least 15% away from all edges. 3) Make the text readable, centered or well-positioned, and never cropped or cut off at the borders. 4) Use appropriate padding around text elements. 5) Double-check Portuguese spelling and grammar before rendering.`);
     }
+    
+    // Global language instruction
+    promptParts.push("IMPORTANT: If any text is included in the image, it MUST be written in correct Brazilian Portuguese with proper grammar, spelling, and accents (á, é, í, ó, ú, ã, õ, ç, etc). No spelling errors allowed.");
     
     // Add brand colors
     if (brandColors && Array.isArray(brandColors) && brandColors.length > 0) {
