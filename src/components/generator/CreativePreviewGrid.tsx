@@ -1,10 +1,14 @@
-import { Check, Download, Loader2, X, Archive, Pencil } from "lucide-react";
+import { Check, Download, Loader2, X, Archive, Pencil, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import JSZip from "jszip";
 import { useState } from "react";
 import { toast } from "sonner";
 import { EditorModal } from "@/components/editor/EditorModal";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 
 export interface CreativeResult {
   id: string;
@@ -40,10 +44,19 @@ export function CreativePreviewGrid({
   const [isZipping, setIsZipping] = useState(false);
   const [editorImage, setEditorImage] = useState<string | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewCopy, setPreviewCopy] = useState<string>("");
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const handleEditClick = (imageUrl: string) => {
     setEditorImage(imageUrl);
     setIsEditorOpen(true);
+  };
+
+  const handlePreviewClick = (imageUrl: string, copy: string) => {
+    setPreviewImage(imageUrl);
+    setPreviewCopy(copy);
+    setIsPreviewOpen(true);
   };
   const completedCount = creatives.filter((c) => c.status === "done").length;
   const totalCount = creatives.length;
@@ -139,7 +152,7 @@ export function CreativePreviewGrid({
             )}
 
             {creative.status === "done" && creative.imageUrl && (
-              <>
+              <div className="group relative w-full h-full">
                 <img
                   src={creative.imageUrl}
                   alt={creative.copy}
@@ -148,14 +161,24 @@ export function CreativePreviewGrid({
                 <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
                   <Check className="w-4 h-4 text-white" />
                 </div>
-                <button
-                  onClick={() => handleEditClick(creative.imageUrl!)}
-                  className="absolute top-2 left-2 w-7 h-7 rounded-full bg-background/90 flex items-center justify-center hover:bg-background transition-colors shadow-sm"
-                  title="Editar no Editor Visual"
-                >
-                  <Pencil className="w-3.5 h-3.5 text-foreground" />
-                </button>
-              </>
+                {/* Hover overlay with actions */}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => handlePreviewClick(creative.imageUrl!, creative.copy)}
+                    className="w-9 h-9 rounded-full bg-background/90 flex items-center justify-center hover:bg-background transition-colors shadow-md"
+                    title="Visualizar"
+                  >
+                    <Eye className="w-4 h-4 text-foreground" />
+                  </button>
+                  <button
+                    onClick={() => handleEditClick(creative.imageUrl!)}
+                    className="w-9 h-9 rounded-full bg-background/90 flex items-center justify-center hover:bg-background transition-colors shadow-md"
+                    title="Editar no Editor Visual"
+                  >
+                    <Pencil className="w-4 h-4 text-foreground" />
+                  </button>
+                </div>
+              </div>
             )}
 
             {creative.status === "error" && (
@@ -197,6 +220,27 @@ export function CreativePreviewGrid({
         onClose={() => setIsEditorOpen(false)}
         imageUrl={editorImage}
       />
+
+      {/* Preview Dialog */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-4xl p-2">
+          {previewImage && (
+            <div className="space-y-3">
+              <img
+                src={previewImage}
+                alt="Preview"
+                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+              />
+              {previewCopy && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Copy:</p>
+                  <p className="text-foreground">{previewCopy}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
