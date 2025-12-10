@@ -1,6 +1,9 @@
-import { Check, Download, Loader2, X } from "lucide-react";
+import { Check, Download, Loader2, X, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import JSZip from "jszip";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export interface CreativeResult {
   id: string;
@@ -20,15 +23,66 @@ interface CreativePreviewGridProps {
   isGenerating: boolean;
 }
 
+async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  const response = await fetch(dataUrl);
+  return response.blob();
+}
+
 export function CreativePreviewGrid({
   creatives,
   onDownloadAll,
   onSaveAll,
   isGenerating,
 }: CreativePreviewGridProps) {
+  const [isZipping, setIsZipping] = useState(false);
   const completedCount = creatives.filter((c) => c.status === "done").length;
   const totalCount = creatives.length;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
+  const handleDownloadZip = async () => {
+    const completedCreatives = creatives.filter(
+      (c) => c.status === "done" && c.imageUrl
+    );
+
+    if (completedCreatives.length === 0) {
+      toast.error("Nenhuma imagem para baixar");
+      return;
+    }
+
+    setIsZipping(true);
+    toast.info("Preparando arquivo ZIP...");
+
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder("criativos");
+
+      for (let i = 0; i < completedCreatives.length; i++) {
+        const creative = completedCreatives[i];
+        if (!creative.imageUrl) continue;
+
+        const blob = await dataUrlToBlob(creative.imageUrl);
+        const fileName = `${creative.format}_${creative.colorVariation}_${creative.copyVariation}_${i + 1}.png`;
+        folder?.file(fileName, blob);
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `criativos_${new Date().toISOString().split("T")[0]}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`${completedCreatives.length} imagens baixadas em ZIP!`);
+    } catch (error) {
+      console.error("Erro ao criar ZIP:", error);
+      toast.error("Erro ao criar arquivo ZIP");
+    } finally {
+      setIsZipping(false);
+    }
+  };
 
   if (creatives.length === 0) {
     return null;
@@ -106,13 +160,17 @@ export function CreativePreviewGrid({
 
       {/* Actions */}
       {completedCount > 0 && !isGenerating && (
-        <div className="flex gap-3 justify-center">
+        <div className="flex gap-3 justify-center flex-wrap">
           <Button onClick={onSaveAll} variant="default">
             Salvar Todas na Galeria ({completedCount})
           </Button>
-          <Button onClick={onDownloadAll} variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Baixar Todas
+          <Button onClick={handleDownloadZip} variant="outline" disabled={isZipping}>
+            {isZipping ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Archive className="w-4 h-4 mr-2" />
+            )}
+            Baixar ZIP
           </Button>
         </div>
       )}
