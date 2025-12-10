@@ -104,43 +104,67 @@ export function EditorCanvas({
     canvas.renderAll();
   }, [format, getDisplaySize]);
 
-  // Load background image
+  // Load background image - use a small delay to ensure canvas is fully ready
   useEffect(() => {
-    if (!fabricRef.current || !backgroundImage) return;
+    if (!backgroundImage) return;
 
-    const canvas = fabricRef.current;
+    // Wait for canvas to be initialized
+    const loadImage = () => {
+      const canvas = fabricRef.current;
+      if (!canvas) {
+        // Retry after a short delay if canvas isn't ready
+        setTimeout(loadImage, 100);
+        return;
+      }
 
-    FabricImage.fromURL(backgroundImage, { crossOrigin: "anonymous" }).then((img) => {
-      const scaleX = format.width / (img.width || 1);
-      const scaleY = format.height / (img.height || 1);
-      const scale = Math.max(scaleX, scaleY);
+      console.log("Loading background image:", backgroundImage.substring(0, 50));
 
-      img.set({
-        scaleX: scale,
-        scaleY: scale,
-        left: format.width / 2,
-        top: format.height / 2,
-        originX: "center",
-        originY: "center",
-        selectable: false,
-        evented: false,
-      });
+      FabricImage.fromURL(backgroundImage, { crossOrigin: "anonymous" })
+        .then((img) => {
+          if (!img || !img.width || !img.height) {
+            console.error("Failed to load image - invalid dimensions");
+            return;
+          }
 
-      (img as any).isBackground = true;
+          const scaleX = format.width / img.width;
+          const scaleY = format.height / img.height;
+          const scale = Math.max(scaleX, scaleY);
 
-      // Remove existing background
-      const objects = canvas.getObjects();
-      objects.forEach((obj) => {
-        if ((obj as any).isBackground) {
-          canvas.remove(obj);
-        }
-      });
+          img.set({
+            scaleX: scale,
+            scaleY: scale,
+            left: format.width / 2,
+            top: format.height / 2,
+            originX: "center",
+            originY: "center",
+            selectable: false,
+            evented: false,
+          });
 
-      canvas.add(img);
-      canvas.sendObjectToBack(img);
-      canvas.renderAll();
-    });
-  }, [backgroundImage, format]);
+          (img as any).isBackground = true;
+
+          // Remove existing background
+          const objects = canvas.getObjects();
+          objects.forEach((obj) => {
+            if ((obj as any).isBackground) {
+              canvas.remove(obj);
+            }
+          });
+
+          canvas.add(img);
+          canvas.sendObjectToBack(img);
+          canvas.renderAll();
+          console.log("Background image loaded successfully");
+        })
+        .catch((err) => {
+          console.error("Error loading background image:", err);
+        });
+    };
+
+    // Small delay to ensure canvas is mounted
+    const timeoutId = setTimeout(loadImage, 50);
+    return () => clearTimeout(timeoutId);
+  }, [backgroundImage, format.width, format.height]);
 
   // Handle tool changes
   useEffect(() => {
