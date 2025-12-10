@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Sparkles, Loader2, Download, Save, RefreshCw, Type, Palette, UserCircle, X, Upload, Pencil } from "lucide-react";
+import { EditorModal } from "@/components/editor/EditorModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +14,8 @@ import { toast } from "sonner";
 
 interface ImageGeneratorProps {
   onEditImage?: (imageUrl: string) => void;
+  lastGeneratedImage?: string | null;
+  onImageGenerated?: (imageUrl: string) => void;
 }
 
 const formats = [
@@ -51,7 +54,7 @@ const moods = [
   { id: "bold", name: "Ousado", emoji: "💪" },
 ];
 
-export function ImageGenerator({ onEditImage }: ImageGeneratorProps) {
+export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerated }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [selectedFormat, setSelectedFormat] = useState("post-square");
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
@@ -64,7 +67,8 @@ export function ImageGenerator({ onEditImage }: ImageGeneratorProps) {
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [referenceModifications, setReferenceModifications] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(lastGeneratedImage || null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const referenceInputRef = useRef<HTMLInputElement>(null);
   const { saveImage } = useGeneratedImages();
@@ -154,6 +158,7 @@ export function ImageGenerator({ onEditImage }: ImageGeneratorProps) {
       }
 
       setGeneratedImage(data.image_url);
+      onImageGenerated?.(data.image_url);
       toast.success("Imagem gerada com sucesso!");
     } catch (error) {
       console.error("Error generating image:", error);
@@ -563,20 +568,24 @@ export function ImageGenerator({ onEditImage }: ImageGeneratorProps) {
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
-              {onEditImage && (
-                <Button
-                  onClick={() => onEditImage(generatedImage)}
-                  variant="default"
-                  className="w-full gap-2"
-                >
-                  <Pencil className="h-4 w-4" />
-                  Editar no Editor Visual
-                </Button>
-              )}
+              <Button
+                onClick={() => setIsEditorOpen(true)}
+                variant="default"
+                className="w-full gap-2"
+              >
+                <Pencil className="h-4 w-4" />
+                Editar no Editor Visual
+              </Button>
             </div>
           )}
         </CardContent>
       </Card>
+
+      <EditorModal
+        open={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        imageUrl={generatedImage}
+      />
     </div>
   );
 }

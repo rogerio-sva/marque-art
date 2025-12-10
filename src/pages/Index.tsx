@@ -10,6 +10,7 @@ import { VisualEditor } from "@/components/editor/VisualEditor";
 const Index = () => {
   const [activeTab, setActiveTab] = useState("brand");
   const [editorImage, setEditorImage] = useState<string | null>(null);
+  const [lastGeneratedImage, setLastGeneratedImage] = useState<string | null>(null);
 
   const handleEditImage = (imageUrl: string) => {
     setEditorImage(imageUrl);
@@ -47,7 +48,11 @@ const Index = () => {
                   Use IA para criar backgrounds, elementos visuais e muito mais
                 </p>
               </div>
-              <ImageGenerator onEditImage={handleEditImage} />
+              <ImageGenerator 
+                onEditImage={handleEditImage} 
+                lastGeneratedImage={lastGeneratedImage}
+                onImageGenerated={setLastGeneratedImage}
+              />
             </div>
           )}
 

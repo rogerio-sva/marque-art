@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { Canvas as FabricCanvas, FabricObject } from "fabric";
 import { Card, CardContent } from "@/components/ui/card";
 import { EditorToolbar, ToolType } from "./EditorToolbar";
@@ -12,9 +12,10 @@ import { toast } from "sonner";
 
 interface VisualEditorProps {
   initialImage?: string | null;
+  isModal?: boolean;
 }
 
-export function VisualEditor({ initialImage }: VisualEditorProps) {
+export function VisualEditor({ initialImage, isModal }: VisualEditorProps) {
   const { config: brandConfig } = useBrandConfig();
   const { saveImage } = useGeneratedImages();
   
@@ -23,6 +24,13 @@ export function VisualEditor({ initialImage }: VisualEditorProps) {
   const [activeTool, setActiveTool] = useState<ToolType>("select");
   const [selectedObject, setSelectedObject] = useState<FabricObject | null>(null);
   const [backgroundImage, setBackgroundImage] = useState<string | null>(initialImage || null);
+
+  // Sync backgroundImage when initialImage changes (e.g., when opening modal with new image)
+  React.useEffect(() => {
+    if (initialImage) {
+      setBackgroundImage(initialImage);
+    }
+  }, [initialImage]);
   
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef<number>(-1);
@@ -156,7 +164,7 @@ export function VisualEditor({ initialImage }: VisualEditorProps) {
   };
 
   return (
-    <Card className="h-[calc(100vh-200px)] min-h-[600px] flex flex-col">
+    <Card className={isModal ? "h-full flex flex-col" : "h-[calc(100vh-200px)] min-h-[600px] flex flex-col"}>
       <EditorToolbar
         activeTool={activeTool}
         onToolChange={setActiveTool}
