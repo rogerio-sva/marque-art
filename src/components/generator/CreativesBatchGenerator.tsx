@@ -117,19 +117,30 @@ export function CreativesBatchGenerator({ onEditImage }: CreativesBatchGenerator
         const format = formatVariations.find((f) => f.name === creative.format);
         const template = copyTemplates.find((t) => t.id === creative.copyVariation);
         
-        // Build prompt with Meta best practices
+        // Build prompt with Meta best practices - IMPROVED to avoid literal labels
         const colorInstruction = getColorInstruction(creative.colorVariation, brandConfig);
         const copyText = template?.templates[0] || productDescription;
 
         const prompt = `
-Professional marketing creative for social media ad.
-Product/Service: ${productDescription}
-Campaign objective: ${selectedObjective || "engagement"}
-Text overlay: "${copyText}"
-Color scheme: ${colorInstruction}
-Style: Modern, clean, high-contrast, scroll-stopping design.
-The text should be bold and readable. Professional photography style.
-Meta Ads best practices: Clear focal point, bold typography, high contrast colors.
+Crie uma imagem publicitária profissional para redes sociais.
+
+SOBRE: ${productDescription}
+
+TEXTO QUE DEVE APARECER NA IMAGEM: "${copyText}"
+
+ESQUEMA DE CORES: ${colorInstruction}
+
+INSTRUÇÕES VISUAIS:
+- Design moderno, limpo, alto contraste
+- Tipografia bold e legível
+- Estilo fotografia profissional
+- Ponto focal claro
+
+PROIBIDO:
+- NÃO escreva palavras como "anúncio", "logo", "produto", "serviço", "texto", "imagem" na imagem
+- NÃO inclua rótulos, labels ou meta-informações
+- NÃO repita frases ou palavras
+- APENAS o texto solicitado acima e elementos visuais profissionais
         `.trim();
 
         const { data, error } = await supabase.functions.invoke("generate-image", {
@@ -235,6 +246,78 @@ Meta Ads best practices: Clear focal point, bold typography, high contrast color
     }
 
     toast.success("Download iniciado!");
+  };
+
+  const handleRegenerateSingle = async (creativeId: string) => {
+    const creative = creatives.find((c) => c.id === creativeId);
+    if (!creative) return;
+
+    // Mark as generating
+    setCreatives((prev) =>
+      prev.map((c) =>
+        c.id === creativeId ? { ...c, status: "generating", error: undefined } : c
+      )
+    );
+
+    try {
+      const format = formatVariations.find((f) => f.name === creative.format);
+      const template = copyTemplates.find((t) => t.id === creative.copyVariation);
+      
+      const colorInstruction = getColorInstruction(creative.colorVariation, brandConfig);
+      const copyText = template?.templates[0] || productDescription;
+
+      const prompt = `
+Crie uma imagem publicitária profissional para redes sociais.
+
+SOBRE: ${productDescription}
+
+TEXTO QUE DEVE APARECER NA IMAGEM: "${copyText}"
+
+ESQUEMA DE CORES: ${colorInstruction}
+
+INSTRUÇÕES VISUAIS:
+- Design moderno, limpo, alto contraste
+- Tipografia bold e legível
+- Estilo fotografia profissional
+- Ponto focal claro
+
+PROIBIDO:
+- NÃO escreva palavras como "anúncio", "logo", "produto", "serviço", "texto", "imagem" na imagem
+- NÃO inclua rótulos, labels ou meta-informações
+- NÃO repita frases ou palavras
+- APENAS o texto solicitado acima e elementos visuais profissionais
+      `.trim();
+
+      const { data, error } = await supabase.functions.invoke("generate-image", {
+        body: {
+          prompt,
+          format: format?.id || "feed-square",
+          style: "corporate",
+          useBrandColors: creative.colorVariation === "original",
+          brandColors: brandConfig?.colors,
+        },
+      });
+
+      if (error) throw error;
+
+      const imageUrl = data.image_url || data.imageUrl;
+
+      setCreatives((prev) =>
+        prev.map((c) =>
+          c.id === creativeId ? { ...c, status: "done", imageUrl } : c
+        )
+      );
+
+      toast.success("Criativo regenerado!");
+    } catch (error) {
+      console.error("Error regenerating creative:", error);
+      setCreatives((prev) =>
+        prev.map((c) =>
+          c.id === creativeId ? { ...c, status: "error", error: "Falha na regeneração" } : c
+        )
+      );
+      toast.error("Erro ao regenerar criativo");
+    }
   };
 
   const totalVariations = calculateTotalVariations();
@@ -487,6 +570,7 @@ Meta Ads best practices: Clear focal point, bold typography, high contrast color
         onSaveAll={handleSaveAll}
         isGenerating={isGenerating}
         onEditImage={onEditImage}
+        onRegenerate={handleRegenerateSingle}
       />
     </div>
   );
