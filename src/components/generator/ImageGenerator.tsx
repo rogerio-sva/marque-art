@@ -54,6 +54,12 @@ const moods = [
   { id: "bold", name: "Ousado", emoji: "💪" },
 ];
 
+const textPositions = [
+  { id: "center", name: "Centro", emoji: "⬛" },
+  { id: "top", name: "Topo", emoji: "⬆️" },
+  { id: "bottom", name: "Rodapé", emoji: "⬇️" },
+];
+
 export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerated }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [selectedFormat, setSelectedFormat] = useState("post-square");
@@ -62,6 +68,7 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [includeText, setIncludeText] = useState(false);
   const [textContent, setTextContent] = useState("");
+  const [textPosition, setTextPosition] = useState("center");
   const [useBrandColors, setUseBrandColors] = useState(false);
   const [specialistPhotos, setSpecialistPhotos] = useState<string[]>([]);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
@@ -141,6 +148,7 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
           contentType: selectedContentType,
           mood: selectedMood,
           includeText: includeText ? textContent : null,
+          textPosition: includeText ? textPosition : null,
           brandColors: useBrandColors ? brandConfig.colors : null,
           specialistPhotos: specialistPhotos.length > 0 ? specialistPhotos : null,
           referenceImage: referenceImage,
@@ -342,12 +350,33 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
                   onChange={(e) => setTextContent(e.target.value)}
                 />
                 
+                {/* Text Position Selection */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Posição do texto</Label>
+                  <div className="flex gap-2">
+                    {textPositions.map((pos) => (
+                      <button
+                        key={pos.id}
+                        onClick={() => setTextPosition(pos.id)}
+                        className={`flex-1 flex items-center justify-center gap-1 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                          textPosition === pos.id
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-card hover:border-primary/50 hover:bg-muted/50"
+                        }`}
+                      >
+                        <span>{pos.emoji}</span>
+                        <span>{pos.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
                 {/* Text Preview */}
                 {textContent && (
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Preview do texto</Label>
                     <div 
-                      className="relative bg-gradient-to-br from-muted/50 to-muted rounded-lg overflow-hidden flex items-center justify-center"
+                      className="relative bg-gradient-to-br from-muted/50 to-muted rounded-lg overflow-hidden"
                       style={{
                         aspectRatio: selectedFormatData?.ratio.replace(':', '/') || '1/1',
                         maxHeight: '180px',
@@ -356,8 +385,16 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
                       {/* Safe margin indicator */}
                       <div className="absolute inset-[15%] border-2 border-dashed border-primary/30 rounded pointer-events-none" />
                       
-                      {/* Text preview */}
-                      <div className="absolute inset-[15%] flex items-center justify-center p-2">
+                      {/* Text preview with position */}
+                      <div 
+                        className={`absolute inset-[15%] flex p-2 ${
+                          textPosition === 'top' 
+                            ? 'items-start justify-center' 
+                            : textPosition === 'bottom' 
+                              ? 'items-end justify-center' 
+                              : 'items-center justify-center'
+                        }`}
+                      >
                         <p 
                           className="text-center font-bold text-foreground break-words"
                           style={{
@@ -376,7 +413,7 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
                       </span>
                     </div>
                     <p className="text-[10px] text-muted-foreground text-center">
-                      Área tracejada = margem segura (15%). O texto ficará dentro dessa área.
+                      Área tracejada = margem segura (15%). O texto ficará na posição selecionada.
                     </p>
                   </div>
                 )}

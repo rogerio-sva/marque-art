@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, style, format, contentType, mood, includeText, brandColors, specialistPhotos, referenceImage, referenceModifications } = await req.json();
+    const { prompt, style, format, contentType, mood, includeText, textPosition, brandColors, specialistPhotos, referenceImage, referenceModifications } = await req.json();
     
     if (!prompt) {
       return new Response(
@@ -98,9 +98,16 @@ serve(async (req) => {
       promptParts.push(`Mood and tone: ${moodPrompts[mood]}`);
     }
     
-    // Add text overlay instructions with safe margin - ALWAYS in Portuguese
+    // Add text overlay instructions with safe margin and position - ALWAYS in Portuguese
     if (includeText && includeText.trim()) {
-      promptParts.push(`Include this text prominently in the image: "${includeText}". CRITICAL INSTRUCTIONS: 1) All text MUST be written in correct Brazilian Portuguese with proper grammar, spelling, and accents. 2) Keep all text well within safe margins, at least 15% away from all edges. 3) Make the text readable, centered or well-positioned, and never cropped or cut off at the borders. 4) Use appropriate padding around text elements. 5) Double-check Portuguese spelling and grammar before rendering.`);
+      const positionInstructions: Record<string, string> = {
+        top: "Position the text at the TOP of the image, horizontally centered, within the top 30% of the safe area",
+        center: "Position the text at the CENTER of the image, both horizontally and vertically centered",
+        bottom: "Position the text at the BOTTOM of the image, horizontally centered, within the bottom 30% of the safe area",
+      };
+      const positionText = positionInstructions[textPosition || "center"] || positionInstructions.center;
+      
+      promptParts.push(`Include this text prominently in the image: "${includeText}". CRITICAL TEXT INSTRUCTIONS: 1) ${positionText}. 2) All text MUST be written in correct Brazilian Portuguese with proper grammar, spelling, and accents (á, é, í, ó, ú, ã, õ, ç). 3) Keep all text well within safe margins, at least 15% away from all edges. 4) Make the text large, readable, and never cropped or cut off at the borders. 5) Use contrasting colors so text is clearly visible. 6) Double-check Portuguese spelling before rendering.`);
     }
     
     // Global language instruction
