@@ -1,4 +1,4 @@
-import { Check, Download, Loader2, X, Archive, Pencil, Eye } from "lucide-react";
+import { Check, Download, Loader2, X, Archive, Pencil, Eye, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import JSZip from "jszip";
@@ -27,6 +27,7 @@ interface CreativePreviewGridProps {
   onSaveAll: () => void;
   isGenerating: boolean;
   onEditImage?: (imageUrl: string) => void;
+  onRegenerate?: (creativeId: string) => void;
 }
 
 async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
@@ -40,6 +41,7 @@ export function CreativePreviewGrid({
   onSaveAll,
   isGenerating,
   onEditImage,
+  onRegenerate,
 }: CreativePreviewGridProps) {
   const [isZipping, setIsZipping] = useState(false);
   const [editorImage, setEditorImage] = useState<string | null>(null);
@@ -177,16 +179,34 @@ export function CreativePreviewGrid({
                   >
                     <Pencil className="w-4 h-4 text-foreground" />
                   </button>
+                  {onRegenerate && (
+                    <button
+                      onClick={() => onRegenerate(creative.id)}
+                      className="w-9 h-9 rounded-full bg-background/90 flex items-center justify-center hover:bg-background transition-colors shadow-md"
+                      title="Regenerar este criativo"
+                    >
+                      <RefreshCcw className="w-4 h-4 text-foreground" />
+                    </button>
+                  )}
                 </div>
               </div>
             )}
 
             {creative.status === "error" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/10 p-2">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/10 p-2 group">
                 <X className="w-6 h-6 text-destructive mb-1" />
                 <span className="text-xs text-destructive text-center">
                   {creative.error || "Erro"}
                 </span>
+                {onRegenerate && (
+                  <button
+                    onClick={() => onRegenerate(creative.id)}
+                    className="mt-2 px-3 py-1 rounded-full bg-background text-foreground text-xs flex items-center gap-1 hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <RefreshCcw className="w-3 h-3" />
+                    Tentar novamente
+                  </button>
+                )}
               </div>
             )}
 
