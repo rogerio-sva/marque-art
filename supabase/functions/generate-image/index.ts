@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, style, format, customWidth, customHeight, contentType, mood, includeText, textPosition, brandColors, specialistPhotos, referenceImage, referenceModifications } = await req.json();
+    const { prompt, style, format, customWidth, customHeight, contentType, mood, includeText, textPosition, brandColors, specialistPhotos, referenceImage, referenceModifications, brandLogo } = await req.json();
     
     if (!prompt) {
       return new Response(
@@ -32,6 +32,7 @@ serve(async (req) => {
 
     const hasSpecialistPhotos = specialistPhotos && Array.isArray(specialistPhotos) && specialistPhotos.length > 0;
     const hasReferenceImage = referenceImage && typeof referenceImage === "string" && referenceImage.length > 0;
+    const hasBrandLogo = brandLogo && typeof brandLogo === "string" && brandLogo.length > 0;
 
     // Format dimensions mapping
     const formatDimensions: Record<string, { width: number; height: number; description: string }> = {
@@ -155,14 +156,19 @@ NUNCA inventar palavras ou escrever texto com erros. Se não souber a grafia cor
       }
     }
 
+    // Add brand logo instructions
+    if (hasBrandLogo) {
+      promptParts.push(`IMPORTANT: Include the provided brand logo in the image. Position it professionally in a corner (top-right or bottom-right preferred) or as a subtle watermark. The logo should be visible but not overwhelming - maintain proper proportions and ensure it doesn't obstruct the main content. The logo should look integrated and professional, not pasted on.`);
+    }
+
     const enhancedPrompt = promptParts.join(". ");
     
     console.log("Generating image with enhanced prompt:", enhancedPrompt);
-    console.log("Format:", format, "Style:", style, "Content Type:", contentType, "Mood:", mood, "Has specialist photos:", hasSpecialistPhotos, "Has reference image:", hasReferenceImage);
+    console.log("Format:", format, "Style:", style, "Content Type:", contentType, "Mood:", mood, "Has specialist photos:", hasSpecialistPhotos, "Has reference image:", hasReferenceImage, "Has brand logo:", hasBrandLogo);
 
     // Build the message content - either simple text or multimodal with images
     let messageContent: any;
-    const hasImages = hasSpecialistPhotos || hasReferenceImage;
+    const hasImages = hasSpecialistPhotos || hasReferenceImage || hasBrandLogo;
     
     if (hasImages) {
       // Multimodal request with reference images
@@ -190,14 +196,32 @@ NUNCA inventar palavras ou escrever texto com erros. Se não souber a grafia cor
         });
       }
 
+      // Add brand logo
+      if (hasBrandLogo) {
+        imageInputs.push({
+          type: "image_url",
+          image_url: {
+            url: brandLogo,
+          },
+        });
+      }
+
       let textInstruction = `Generate a beautiful, high-quality marketing image. ${enhancedPrompt}. Ultra high resolution, professional quality, suitable for social media and advertising.`;
       
-      if (hasReferenceImage && hasSpecialistPhotos) {
+      if (hasReferenceImage && hasSpecialistPhotos && hasBrandLogo) {
+        textInstruction += " The first image is the reference for style/composition. The following images are specialists/experts to incorporate. The last image is the brand logo to include.";
+      } else if (hasReferenceImage && hasBrandLogo) {
+        textInstruction += " The first image is the reference for style/composition. The second image is the brand logo to include professionally.";
+      } else if (hasSpecialistPhotos && hasBrandLogo) {
+        textInstruction += " The provided photos are specialists/experts to incorporate. The last image is the brand logo to include professionally.";
+      } else if (hasReferenceImage && hasSpecialistPhotos) {
         textInstruction += " The first image is the reference for style/composition. The following images are specialists/experts to incorporate.";
       } else if (hasReferenceImage) {
         textInstruction += " Use the provided image as a reference for the style and composition.";
       } else if (hasSpecialistPhotos) {
         textInstruction += " Incorporate the provided photos of specialists/experts into the design prominently.";
+      } else if (hasBrandLogo) {
+        textInstruction += " The provided image is the brand logo - include it professionally in the design.";
       }
 
       messageContent = [

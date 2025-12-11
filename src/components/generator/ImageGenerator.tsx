@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Sparkles, Loader2, Download, Save, RefreshCw, Type, Palette, UserCircle, X, Upload, Pencil } from "lucide-react";
+import { Sparkles, Loader2, Download, Save, RefreshCw, Type, Palette, UserCircle, X, Upload, Pencil, Image as ImageIcon } from "lucide-react";
 import { EditorModal } from "@/components/editor/EditorModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,6 +93,7 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
   const [textSize, setTextSize] = useState("medium");
   const [textColor, setTextColor] = useState("light");
   const [useBrandColors, setUseBrandColors] = useState(false);
+  const [includeBrandLogo, setIncludeBrandLogo] = useState(false);
   const [specialistPhotos, setSpecialistPhotos] = useState<string[]>([]);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [referenceModifications, setReferenceModifications] = useState("");
@@ -178,6 +179,7 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
           specialistPhotos: specialistPhotos.length > 0 ? specialistPhotos : null,
           referenceImage: referenceImage,
           referenceModifications: referenceModifications.trim() || null,
+          brandLogo: includeBrandLogo && brandConfig.logo ? brandConfig.logo : null,
         },
       });
 
@@ -664,6 +666,30 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
               checked={useBrandColors}
               onCheckedChange={setUseBrandColors}
             />
+          </div>
+
+          {/* Brand Logo Toggle */}
+          <div className="flex items-center justify-between rounded-lg border border-border p-4">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              <Label htmlFor="brand-logo" className="cursor-pointer">Incluir logo da marca</Label>
+              {includeBrandLogo && brandConfig.logo && (
+                <img 
+                  src={brandConfig.logo} 
+                  alt="Logo" 
+                  className="h-6 w-6 object-contain ml-2 rounded border border-border"
+                />
+              )}
+            </div>
+            {brandConfig.logo ? (
+              <Switch
+                id="brand-logo"
+                checked={includeBrandLogo}
+                onCheckedChange={setIncludeBrandLogo}
+              />
+            ) : (
+              <span className="text-xs text-muted-foreground">Configure na aba Marca</span>
+            )}
           </div>
 
           <Button
