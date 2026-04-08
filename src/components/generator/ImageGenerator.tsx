@@ -192,8 +192,17 @@ export function ImageGenerator({ onEditImage, lastGeneratedImage, onImageGenerat
         throw new Error(data.error);
       }
 
-      setGeneratedImage(data.image_url);
-      onImageGenerated?.(data.image_url);
+      const imageUrl = data.url || data.image_url;
+      setGeneratedImage(imageUrl);
+      onImageGenerated?.(imageUrl);
+
+      // Auto-save to gallery
+      try {
+        await saveImage(prompt, selectedStyle, imageUrl);
+      } catch {
+        // Save error already handled in hook
+      }
+
       toast.success("Imagem gerada com sucesso!");
     } catch (error) {
       console.error("Error generating image:", error);

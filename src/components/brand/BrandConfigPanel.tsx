@@ -31,14 +31,14 @@ export function BrandConfigPanel() {
       const fileName = `logo-${Date.now()}.${file.name.split(".").pop()}`;
       
       const { error: uploadError } = await supabase.storage
-        .from("brand-assets")
-        .upload(fileName, file);
+        .from("generated-images")
+        .upload(`brand-logos/${fileName}`, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from("brand-assets")
-        .getPublicUrl(fileName);
+        .from("generated-images")
+        .getPublicUrl(`brand-logos/${fileName}`);
 
       updateConfig({ logo: publicUrl });
       toast.success("Logo carregado com sucesso!");
